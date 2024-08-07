@@ -1,7 +1,34 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, AttributeArgs, ItemFn, NestedMeta, FnArg, Pat, Type};
+use syn::{parse_macro_input, AttributeArgs, DeriveInput, FnArg, ItemFn, NestedMeta, Pat, Type};
+
+#[proc_macro_derive(FunctionCallType)]
+pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+
+    let name = &ast.ident;
+    let fields = match &ast.data {
+        syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { named, .. }), .. }) => named,
+        _ => panic!("Only works for structs"),
+    };
+
+    let expanded_fields = fields.iter().map(|f| {
+        let name = f.ident.as_ref().unwrap();
+        let ty = &f.ty;
+        quote! { #name: #ty }
+    });
+
+    // Convert the struct name to uppercase and ensure it's a valid identifier
+    let uppercased_name = syn::Ident::new(&name.to_string().to_uppercase(), name.span());
+
+    // Generate the constant declaration with the uppercased struct name
+    let expanded_struct = quote! {
+        pub const #uppercased_name: &'static str = concat!(stringify!(#(#expanded_fields),*));
+    };
+
+    TokenStream::from(expanded_struct)
+}
 
 #[proc_macro_attribute]
 pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
