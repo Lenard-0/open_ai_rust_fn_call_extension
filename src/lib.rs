@@ -1,7 +1,7 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Attribute, AttributeArgs, ItemFn, NestedMeta};
+use syn::{parse_macro_input, AttributeArgs, ItemFn, NestedMeta, FnArg, Pat, Type};
 
 #[proc_macro_attribute]
 pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -22,18 +22,51 @@ pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
             _ => None,
         });
 
-    let description: &str = match &opt_description {
-        Some(description) => description,
-        None => ""
-    };
+    let description = opt_description.unwrap_or_default();
 
-    // Generate the FunctionCall struct with the function's name and description
+    // Extract function parameters
+    let parameters = input.sig.inputs.iter().filter_map(|arg| {
+        if let FnArg::Typed(pat_type) = arg {
+            let param_name = match &*pat_type.pat {
+                Pat::Ident(pat_ident) => pat_ident.ident.to_string(),
+                _ => return None,
+            };
 
+            let param_type = match &*pat_type.ty {
+                Type::Path(type_path) => type_path.path.segments.last().unwrap().ident.to_string(),
+                _ => "unknown".to_string(),
+            };
+
+            Some((param_name, param_type))
+        } else {
+            None
+        }
+    }).collect::<Vec<_>>();
+
+    let mut params_array: [&str; 100] = [""; 100];
+    let mut params_vec = Vec::new();
+    for (i, (name, _type)) in parameters.iter().enumerate() {
+        let mut combined = name.clone();
+        combined.push_str(": ");
+        combined.push_str(_type);
+        params_vec.push(combined.clone());
+    }
+
+    for (i, param) in params_vec.iter().enumerate() {
+        params_array[i] = param;
+    }
+
+    // Generate the FunctionCall struct with the function's name, description, and parameters
     let output = quote! {
-        // Generate the FunctionCall struct with the function's name and description
-        const FUNCTION_CALL: FunctionCall = FunctionCall {
+        // Define the function call data
+        const FUNCTION_CALL: FunctionCall<'static> = FunctionCall {
             name: #fn_name,
-            description: #description
+            description: #description,
+            parameters: [
+                #(
+                    #params_array
+                ),*
+            ],
         };
 
         // Original function definition
