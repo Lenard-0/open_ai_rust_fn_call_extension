@@ -6,7 +6,7 @@ mod tests {
     // tests/function_call_tests.rs
 
     #[derive(Debug, PartialEq)]
-    struct FunctionCall<'a> {
+    struct FunctionCallRaw<'a> {
         pub name: &'a str,
         pub description: &'a str,
         pub parameters: [&'a str; 100]
@@ -34,7 +34,7 @@ mod tests {
 
         println!("FUNCTION_CALL {:?}", CHANGE_LIGHT);
 
-        assert_eq!(CHANGE_LIGHT, FunctionCall {
+        assert_eq!(CHANGE_LIGHT, FunctionCallRaw {
             name: "change_light",
             description: "This function changes the light state.",
             parameters: parameters

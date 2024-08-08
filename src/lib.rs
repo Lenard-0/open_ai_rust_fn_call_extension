@@ -90,7 +90,7 @@ pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Generate the FunctionCall struct with the function's name, description, and parameters
     let output = quote! {
         // Define the function call data
-        const #fn_name_uppercase: FunctionCall<'static> = FunctionCall {
+        const #fn_name_uppercase: FunctionCallRaw<'static> = FunctionCallRaw {
             name: #fn_name,
             description: #description,
             parameters: [
