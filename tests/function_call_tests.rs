@@ -13,7 +13,10 @@ mod tests {
     }
 
     #[function_call("This function changes the light state.")]
-    fn change_light(on: bool, extra_data: Arg) {
+    fn change_light(
+        on: bool,
+        extra_data: Arg
+    ) {
         // Function body
     }
 
@@ -48,16 +51,15 @@ mod tests {
         struct TestStruct {
             field1: u32,
             field2: String,
+            field3: String,
         }
 
         // Define the expected output
-        let expected_output = r#"
-            pub const TestStruct: &'static str = concat!("field1: u32", "field2: String");
-        "#;
+        let expected_output = r#"TESTSTRUCT { field1 : u32, field2 : String, field3 : String"#;
 
         // Assert that the expanded code matches the expected output
         println!("TEST {:?}", TESTSTRUCT);
-        // assert_eq!(TEST, expected_output);
+        assert_eq!(TESTSTRUCT, expected_output);
     }
 }
 

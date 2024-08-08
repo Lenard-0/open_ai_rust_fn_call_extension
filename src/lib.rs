@@ -2,7 +2,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, AttributeArgs, DeriveInput, FnArg, Ident, ItemFn, NestedMeta, Pat, Type};
+use syn::{parse_macro_input, Attribute, AttributeArgs, DeriveInput, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
 
 #[proc_macro_derive(FunctionCallType)]
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
@@ -22,10 +22,13 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
 
     // Convert the struct name to uppercase and ensure it's a valid identifier
     let uppercased_name = syn::Ident::new(&name.to_string().to_uppercase(), name.span());
+    let mut name = name.to_string().to_uppercase();
+    name.push_str(" { ");
+    let name_borrow = name.as_str();
 
     // Generate the constant declaration with the uppercased struct name
     let expanded_struct = quote! {
-        pub const #uppercased_name: &'static str = concat!(stringify!(#(#expanded_fields),*));
+        pub const #uppercased_name: &'static str = concat!(#name_borrow, concat!(stringify!(#(#expanded_fields),*)));
     };
 
     TokenStream::from(expanded_struct)
@@ -42,18 +45,17 @@ pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
     let function_name = input.sig.ident.to_string();
     let fn_name = function_name.as_str();
 
-    // Parse the attribute to extract the description
-    let opt_description = parse_macro_input!(attr as AttributeArgs)
+    // Parse the attribute to extract the function description
+    let description = parse_macro_input!(attr as syn::AttributeArgs)
         .iter()
         .find_map(|meta| match meta {
             NestedMeta::Lit(syn::Lit::Str(lit_str)) => Some(lit_str.value()),
             _ => None,
-        });
+        })
+        .unwrap_or_default();
 
-    let description = opt_description.unwrap_or_default();
-
-    // Extract function parameters
-    let parameters = input.sig.inputs.iter().filter_map(|arg| {
+    // Extract function parameters and their descriptions
+    let parameters: Vec<(String, String, String)> = input.sig.inputs.iter().filter_map(|arg| {
         if let FnArg::Typed(pat_type) = arg {
             let param_name = match &*pat_type.pat {
                 Pat::Ident(pat_ident) => pat_ident.ident.to_string(),
@@ -65,29 +67,29 @@ pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
                 _ => "unknown".to_string(),
             };
 
-            Some((param_name, param_type))
+            // Extract custom attributes for the parameter
+            let param_description = extract_parameter_description(&pat_type.attrs);
+
+            Some((param_name, param_type, param_description))
         } else {
             None
         }
-    }).collect::<Vec<_>>();
+    }).collect();
 
+    // Create a fixed-size array with 100 elements
+    let mut parameters_formatted = vec![];
+    for (name, _type, comment) in parameters {
+        parameters_formatted.push(format!("{name}: {_type} ({comment})"))
+    }
     let mut params_array: [&str; 100] = [""; 100];
-    let mut params_vec = Vec::new();
-    for (i, (name, _type)) in parameters.iter().enumerate() {
-        let mut combined = name.clone();
-        combined.push_str(": ");
-        combined.push_str(_type);
-        params_vec.push(combined.clone());
+    let mut i = 0;
+    while i < parameters_formatted.len() {
+        params_array[i] = &parameters_formatted[i];
+        i += 1;
     }
 
-    for (i, param) in params_vec.iter().enumerate() {
-        params_array[i] = param;
-    }
-
-    let fn_name_uppercase = fn_name.to_uppercase();
     let fn_name_uppercase = Ident::new(&fn_name.to_uppercase(), Span::call_site());
 
-    // Generate the FunctionCall struct with the function's name, description, and parameters
     let output = quote! {
         // Define the function call data
         const #fn_name_uppercase: FunctionCallRaw<'static> = FunctionCallRaw {
@@ -105,4 +107,23 @@ pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     TokenStream::from(output)
+}
+
+fn extract_parameter_description(attrs: &[Attribute]) -> String {
+    attrs.iter().find_map(|attr| {
+        if attr.path.is_ident("function_call_description") {
+            match attr.parse_meta().ok() {
+                Some(Meta::NameValue(nv)) => {
+                    if let syn::Lit::Str(lit_str) = nv.lit {
+                        return Some(lit_str.value());
+                    } else {
+                        return None
+                    }
+                },
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }).unwrap_or_default()
 }
