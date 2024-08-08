@@ -1,7 +1,8 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, AttributeArgs, DeriveInput, FnArg, ItemFn, NestedMeta, Pat, Type};
+use syn::{parse_macro_input, AttributeArgs, DeriveInput, FnArg, Ident, ItemFn, NestedMeta, Pat, Type};
 
 #[proc_macro_derive(FunctionCallType)]
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
@@ -83,10 +84,13 @@ pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
         params_array[i] = param;
     }
 
+    let fn_name_uppercase = fn_name.to_uppercase();
+    let fn_name_uppercase = Ident::new(&fn_name.to_uppercase(), Span::call_site());
+
     // Generate the FunctionCall struct with the function's name, description, and parameters
     let output = quote! {
         // Define the function call data
-        const FUNCTION_CALL: FunctionCall<'static> = FunctionCall {
+        const #fn_name_uppercase: FunctionCall<'static> = FunctionCall {
             name: #fn_name,
             description: #description,
             parameters: [

@@ -32,9 +32,9 @@ mod tests {
         parameters[0] = "on: bool";
         parameters[1] = "extra_data: Arg";
 
-        println!("FUNCTION_CALL {:?}", FUNCTION_CALL);
+        println!("FUNCTION_CALL {:?}", CHANGE_LIGHT);
 
-        assert_eq!(FUNCTION_CALL, FunctionCall {
+        assert_eq!(CHANGE_LIGHT, FunctionCall {
             name: "change_light",
             description: "This function changes the light state.",
             parameters: parameters
