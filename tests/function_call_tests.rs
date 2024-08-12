@@ -1,6 +1,8 @@
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     // use open_ai_rust::logoi::input::tool::FunctionCall;
     use open_ai_rust_fn_call_extension::{function_call, FunctionCallType};
     // tests/function_call_tests.rs
@@ -75,6 +77,36 @@ mod tests {
         // Assert that the expanded code matches the expected output
         println!("VECSTRUCT {:?}", VECSTRUCT);
         assert_eq!(VECSTRUCT, expected_output);
+    }
+
+    #[test]
+    fn test_expand_struct_w_hashmap() {
+        #[derive(FunctionCallType)]
+        struct HashMapStruct {
+            obj: HashMap<String, String>
+        }
+
+        // Define the expected output
+        let expected_output = r#"HashMapStruct { obj : HashMap < String, String >"#;
+
+        // Assert that the expanded code matches the expected output
+        println!("HASHMAPSTRUCT {:?}", HASHMAPSTRUCT);
+        assert_eq!(HASHMAPSTRUCT, expected_output);
+    }
+
+    #[test]
+    fn test_expand_struct_w_vec_wrapping_hashmap() {
+        #[derive(FunctionCallType)]
+        struct VecHashMapStruct {
+            objs: Vec<HashMap<String, String>>
+        }
+
+        // Define the expected output
+        let expected_output = r#"VecHashMapStruct { objs : Vec < HashMap < String, String > >"#;
+
+        // Assert that the expanded code matches the expected output
+        println!("HASHMAPSTRUCT {:?}", VECHASHMAPSTRUCT);
+        assert_eq!(VECHASHMAPSTRUCT, expected_output);
     }
 }
 
