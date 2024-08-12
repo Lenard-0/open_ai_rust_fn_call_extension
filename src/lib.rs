@@ -1,36 +1,83 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use proc_macro2::Span;
+use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
-use syn::{parse_macro_input, Attribute, DeriveInput, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
+use syn::{parse_macro_input, Attribute, AttributeArgs, Data, DataStruct, DeriveInput, Fields, FieldsNamed, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
 
 #[proc_macro_derive(FunctionCallType)]
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
-    let ast = parse_macro_input!(input as DeriveInput);
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = input.ident;
 
-    let name: &Ident = &ast.ident;
-    let fields = match &ast.data {
-        syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { named, .. }), .. }) => named,
-        _ => panic!("Only works for structs"),
+    let out = match input.data {
+        Data::Struct(s) => {
+            let fields = s.fields.into_iter().map(|field| field.ident.unwrap());
+            quote! {
+                impl json_trait::Json for #name {
+                    fn to_json(&self) -> String {
+                        let mut json = "{ ".to_string();
+                        #(
+                            json.push_str(&format!("\"{}\": {}, ", stringify!(#fields), json_trait::Json::to_json(&self.#fields)));
+                        )*
+                        json.remove(json.len() - 2); // remove trailling comma
+                        json.push('}');
+                        json
+                    }
+                }
+            }
+        },
+        Data::Enum(e) => {
+            let variants = e.variants.into_iter().map(|variant| variant.ident);
+            quote! {
+                impl open_ai_rust::FunctionCallable for #name {
+                    fn to_json(&self) -> String {
+                        match &self {
+                            #(Self::#variants => format!("\"{}\"", stringify!(#variants)) ),*
+                        }
+                    }
+                }
+            }
+        },
+        _ => todo!(),
     };
 
-    let expanded_fields = fields.iter().map(|f| {
-        let name = f.ident.as_ref().unwrap();
-        let ty = &f.ty;
-        quote! { #name: #ty }
-    });
+    out.into()
+}
 
-    // Convert the struct name to uppercase and ensure it's a valid identifier
-    let uppercased_name = syn::Ident::new(&name.to_string().to_uppercase(), name.span());
-    let mut name = name.to_string();
-    name.push_str(" { ");
+// fn generate_struct_representation(ast: &DeriveInput) -> TokenStream2 {
+//     let name = &ast.ident;
+//     let fields = match &ast.data {
+//         Data::Struct(DataStruct { fields: Fields::Named(FieldsNamed { named, .. }), .. }) => named,
+//         _ => panic!("Only works for structs"),
+//     };
 
-    // Generate the constant declaration with the uppercased struct name
-    let expanded_struct = quote! {
-        pub const #uppercased_name: &'static str = concat!(#name, concat!(stringify!(#(#expanded_fields),*)));
-    };
+//     let expanded_fields = fields.iter().map(|f| {
+//         let field_name = &f.ident;
+//         let ty = &f.ty;
+//         let field_repr = match ty {
+//             Type::Path(path) => {
+//                 if let Some(ident) = path.path.get_ident() {
+//                     // Recursively process nested structs
+//                     let nested_name = format_ident(&ident.to_string().to_uppercase());
+//                     quote! { #field_name: { #nested_name } }
+//                 } else {
+//                     quote! { #field_name: #ty }
+//                 }
+//             },
+//             _ => quote! { #field_name: #ty },
+//         };
+//         field_repr
+//     });
 
-    TokenStream::from(expanded_struct)
+//     let uppercased_name = syn::Ident::new(&name.to_string().to_uppercase(), name.span());
+
+//     quote! {
+//         pub const #uppercased_name: &'static str = concat!(stringify!(#name { #(#expanded_fields),* }));
+//     }
+// }
+
+fn format_ident(s: &str) -> syn::Ident {
+    syn::Ident::new(s, proc_macro2::Span::call_site())
 }
 
 #[proc_macro_attribute]

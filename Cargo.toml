@@ -1,6 +1,6 @@
 [package]
 name = "open_ai_rust_fn_call_extension"
-version = "0.1.6"
+version = "0.2.0"
 edition = "2021"
 description = "Macros for Open AI function calling to be used with the open_ai_rust crate for syntactic sugar."
 license = "MIT"
@@ -10,7 +10,7 @@ proc-macro = true
 
 [dependencies]
 proc-macro2 = "1.0"
-quote = "1.0"
+quote = "1.0.36"
 syn = { version = "1.0", features = ["full"] }
 serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.121"
