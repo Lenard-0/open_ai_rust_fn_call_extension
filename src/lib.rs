@@ -13,11 +13,11 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
         Data::Struct(s) => {
             let fields = s.fields.into_iter().map(|field| field.ident.unwrap());
             quote! {
-                impl open_ai_rust::FunctionCallable for #name {
+                impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
                     fn to_json(&self) -> String {
                         let mut json = "{ ".to_string();
                         #(
-                            json.push_str(&format!("\"{}\": {}, ", stringify!(#fields), open_ai_rust::FunctionCallable::to_fn_call(&self.#fields)));
+                            json.push_str(&format!("\"{}\": {}, ", stringify!(#fields), open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_call(&self.#fields)));
                         )*
                         json.remove(json.len() - 2); // remove trailling comma
                         json.push('}');
@@ -29,7 +29,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
         Data::Enum(e) => {
             let variants = e.variants.into_iter().map(|variant| variant.ident);
             quote! {
-                impl open_ai_rust::FunctionCallable for #name {
+                impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
                     fn to_json(&self) -> String {
                         match &self {
                             #(Self::#variants => format!("\"{}\"", stringify!(#variants)) ),*
