@@ -4,7 +4,7 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use syn::{parse_macro_input, Attribute, AttributeArgs, Data, DataStruct, DeriveInput, Fields, FieldsNamed, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
 
-#[proc_macro_derive(FunctionCallable)]
+#[proc_macro_derive(FunctionCall)]
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
