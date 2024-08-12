@@ -8,6 +8,7 @@ use syn::{parse_macro_input, Attribute, AttributeArgs, Data, DataStruct, DeriveI
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
+    let ident_as_str = name.to_string();
 
     let out = match input.data {
         Data::Struct(s) => {
@@ -17,7 +18,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
                     fn to_fn_call(&self) -> FunctionCall {
                         FunctionCall {
-                            name: #name,
+                            name: #ident_as_str,
                             description: None,
                             parameters: vec![
                                 #(

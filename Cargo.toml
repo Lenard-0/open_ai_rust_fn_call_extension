@@ -1,6 +1,6 @@
 [package]
 name = "open_ai_rust_fn_call_extension"
-version = "0.2.9"
+version = "0.2.10"
 edition = "2021"
 description = "Macros for Open AI function calling to be used with the open_ai_rust crate for syntactic sugar."
 license = "MIT"
