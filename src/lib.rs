@@ -1,8 +1,8 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, Attribute, AttributeArgs, Data, DataStruct, DeriveInput, Fields, FieldsNamed, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
+use syn::{parse_macro_input, Attribute, Data, DeriveInput, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
 
 #[proc_macro_derive(FunctionCall)]
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
@@ -35,7 +35,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
                         FunctionType::Object(vec![
                             #(
                                 FunctionParameter {
-                                    name: stringify!(#fields2),
+                                    name: String::from(stringify!(#fields2)),
                                     _type: open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_type(&self.#fields2),
                                     description: None
                                 },
