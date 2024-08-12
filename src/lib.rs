@@ -11,7 +11,8 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
 
     let out = match input.data {
         Data::Struct(s) => {
-            let fields = s.fields.into_iter().map(|field| field.ident.unwrap());
+            let fields = s.fields.clone().into_iter().map(|field| field.ident.unwrap());
+            let fields2 = s.fields.into_iter().map(|field| field.ident.unwrap());
             quote! {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
                     fn to_fn_call(&self) -> FunctionCall {
@@ -28,6 +29,18 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
                                 )*
                             ]
                         }
+                    }
+
+                    fn to_fn_type(&self) -> FunctionType {
+                        FunctionType::Object(vec![
+                            #(
+                                FunctionParameter {
+                                    name: stringify!(#fields2),
+                                    _type: open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_type(&self.#fields2),
+                                    description: None
+                                },
+                            )*
+                        ])
                     }
                 }
             }
