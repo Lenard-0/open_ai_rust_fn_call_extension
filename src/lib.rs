@@ -8,7 +8,7 @@ use syn::{parse_macro_input, Attribute, AttributeArgs, DeriveInput, FnArg, Ident
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
 
-    let name = &ast.ident;
+    let name: &Ident = &ast.ident;
     let fields = match &ast.data {
         syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { named, .. }), .. }) => named,
         _ => panic!("Only works for structs"),
@@ -22,13 +22,12 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
 
     // Convert the struct name to uppercase and ensure it's a valid identifier
     let uppercased_name = syn::Ident::new(&name.to_string().to_uppercase(), name.span());
-    let mut name = name.to_string().to_uppercase();
+    let mut name = name.to_string();
     name.push_str(" { ");
-    let name_borrow = name.as_str();
 
     // Generate the constant declaration with the uppercased struct name
     let expanded_struct = quote! {
-        pub const #uppercased_name: &'static str = concat!(#name_borrow, concat!(stringify!(#(#expanded_fields),*)));
+        pub const #uppercased_name: &'static str = concat!(#name, concat!(stringify!(#(#expanded_fields),*)));
     };
 
     TokenStream::from(expanded_struct)
