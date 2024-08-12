@@ -4,7 +4,7 @@ mod tests {
     use std::collections::HashMap;
 
     // use open_ai_rust::logoi::input::tool::FunctionCall;
-    use open_ai_rust_fn_call_extension::{function_call, FunctionCallType};
+    use open_ai_rust_fn_call_extension::{function_call, FunctionCallable};
     use serde::Serialize;
     // tests/function_call_tests.rs
 
