@@ -15,14 +15,14 @@ mod tests {
     }
 
     #[function_call("This function changes the light state.")]
-    fn change_light(
-        on: bool,
-        extra_data: Arg
+    fn _change_light(
+        _on: bool,
+        _extra_data: _Arg
     ) {
         // Function body
     }
 
-    pub struct Arg {
+    pub struct _Arg {
         pub name: String,
         pub value: String
     }
@@ -34,13 +34,13 @@ mod tests {
     #[test]
     fn test_function_call_attribute_macro() {
         let mut parameters = [""; 100];
-        parameters[0] = "on: bool";
-        parameters[1] = "extra_data: Arg";
+        parameters[0] = "_on: bool";
+        parameters[1] = "_extra_data: _Arg";
 
-        println!("FUNCTION_CALL {:?}", CHANGE_LIGHT);
+        println!("FUNCTION_CALL {:?}", _CHANGE_LIGHT);
 
-        assert_eq!(CHANGE_LIGHT, FunctionCallRaw {
-            name: "change_light",
+        assert_eq!(_CHANGE_LIGHT, FunctionCallRaw {
+            name: "_change_light",
             description: "This function changes the light state.",
             parameters: parameters
         });
@@ -50,63 +50,63 @@ mod tests {
     #[test]
     fn test_expand_struct() {
         #[derive(FunctionCallType)]
-        struct TestStruct {
+        struct _TestStruct {
             field1: u32,
             field2: String,
             field3: String,
         }
 
         // Define the expected output
-        let expected_output = r#"TestStruct { field1 : u32, field2 : String, field3 : String"#;
+        let expected_output = r#"_TestStruct { field1 : u32, field2 : String, field3 : String"#;
 
         // Assert that the expanded code matches the expected output
-        println!("TEST {:?}", TESTSTRUCT);
-        assert_eq!(TESTSTRUCT, expected_output);
+        println!("TEST {:?}", _TESTSTRUCT);
+        assert_eq!(_TESTSTRUCT, expected_output);
     }
 
     #[test]
     fn test_expand_struct_w_vec() {
         #[derive(FunctionCallType)]
-        struct VecStruct {
+        struct _VecStruct {
             field1: Vec<String>
         }
 
         // Define the expected output
-        let expected_output = r#"VecStruct { field1 : Vec < String >"#;
+        let expected_output = r#"_VecStruct { field1 : Vec < String >"#;
 
         // Assert that the expanded code matches the expected output
-        println!("VECSTRUCT {:?}", VECSTRUCT);
-        assert_eq!(VECSTRUCT, expected_output);
+        println!("VECSTRUCT {:?}", _VECSTRUCT);
+        assert_eq!(_VECSTRUCT, expected_output);
     }
 
     #[test]
     fn test_expand_struct_w_hashmap() {
         #[derive(FunctionCallType)]
-        struct HashMapStruct {
+        struct _HashMapStruct {
             obj: HashMap<String, String>
         }
 
         // Define the expected output
-        let expected_output = r#"HashMapStruct { obj : HashMap < String, String >"#;
+        let expected_output = r#"_HashMapStruct { obj : HashMap < String, String >"#;
 
         // Assert that the expanded code matches the expected output
-        println!("HASHMAPSTRUCT {:?}", HASHMAPSTRUCT);
-        assert_eq!(HASHMAPSTRUCT, expected_output);
+        println!("HASHMAPSTRUCT {:?}", _HASHMAPSTRUCT);
+        assert_eq!(_HASHMAPSTRUCT, expected_output);
     }
 
     #[test]
     fn test_expand_struct_w_vec_wrapping_hashmap() {
         #[derive(FunctionCallType)]
-        struct VecHashMapStruct {
+        struct _VecHashMapStruct {
             objs: Vec<HashMap<String, String>>
         }
 
         // Define the expected output
-        let expected_output = r#"VecHashMapStruct { objs : Vec < HashMap < String, String > >"#;
+        let expected_output = r#"_VecHashMapStruct { objs : Vec < HashMap < String, String > >"#;
 
         // Assert that the expanded code matches the expected output
-        println!("HASHMAPSTRUCT {:?}", VECHASHMAPSTRUCT);
-        assert_eq!(VECHASHMAPSTRUCT, expected_output);
+        println!("HASHMAPSTRUCT {:?}", _VECHASHMAPSTRUCT);
+        assert_eq!(_VECHASHMAPSTRUCT, expected_output);
     }
 }
 

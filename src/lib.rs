@@ -2,7 +2,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{parse_macro_input, Attribute, AttributeArgs, DeriveInput, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
+use syn::{parse_macro_input, Attribute, DeriveInput, FnArg, Ident, ItemFn, Meta, NestedMeta, Pat, Type};
 
 #[proc_macro_derive(FunctionCallType)]
 pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
