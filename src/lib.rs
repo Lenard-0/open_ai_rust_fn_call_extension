@@ -12,7 +12,12 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
     let out = match input.data {
         Data::Struct(s) => {
             let fields = s.fields.clone().into_iter().map(|field| field.ident.unwrap());
-            let fields2 = s.fields.into_iter().map(|field| field.ident.unwrap());
+            let fields2 = s.fields.clone().into_iter().map(|field| field.ident.unwrap());
+            let initializers = s.fields.clone().into_iter().map(|field| {
+                let name = field.ident.unwrap();
+                let ty = field.ty;
+                quote! { #name: <#ty as Default>::default() }
+            });
             quote! {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
                     fn to_fn_call(&self) -> FunctionCall {
@@ -41,6 +46,12 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
                                 },
                             )*
                         ])
+                    }
+
+                    fn for_fn_type() -> Self {
+                        Self {
+                            #(#initializers,)*
+                        }
                     }
                 }
             }
