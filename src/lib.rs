@@ -18,7 +18,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
                     fn to_fn_call(&self) -> FunctionCall {
                         FunctionCall {
-                            name: #ident_as_str,
+                            name: ident_as_str,
                             description: None,
                             parameters: vec![
                                 #(
