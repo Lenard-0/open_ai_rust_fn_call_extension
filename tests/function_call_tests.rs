@@ -61,5 +61,20 @@ mod tests {
         println!("TEST {:?}", TESTSTRUCT);
         assert_eq!(TESTSTRUCT, expected_output);
     }
+
+    #[test]
+    fn test_expand_struct_w_vec() {
+        #[derive(FunctionCallType)]
+        struct VecStruct {
+            field1: Vec<String>
+        }
+
+        // Define the expected output
+        let expected_output = r#"VecStruct { field1 : Vec < String >"#;
+
+        // Assert that the expanded code matches the expected output
+        println!("VECSTRUCT {:?}", VECSTRUCT);
+        assert_eq!(VECSTRUCT, expected_output);
+    }
 }
 
