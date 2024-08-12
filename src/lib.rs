@@ -22,7 +22,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
                             parameters: vec![
                                 #(
                                     FunctionParameter {
-                                        name: stringify!(#fields),
+                                        name: String::from(stringify!(#fields)),
                                         _type: open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_type(&self.#fields),
                                         description: None
                                     },
