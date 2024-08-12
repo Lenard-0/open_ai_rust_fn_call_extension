@@ -14,7 +14,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
             let fields = s.fields.into_iter().map(|field| field.ident.unwrap());
             quote! {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
-                    fn to_json(&self) -> String {
+                    fn to_fn_call(&self) -> String {
                         let mut json = "{ ".to_string();
                         #(
                             json.push_str(&format!("\"{}\": {}, ", stringify!(#fields), open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_call(&self.#fields)));
@@ -30,7 +30,7 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
             let variants = e.variants.into_iter().map(|variant| variant.ident);
             quote! {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
-                    fn to_json(&self) -> String {
+                    fn to_fn_call(&self) -> FunctionCall {
                         match &self {
                             #(Self::#variants => format!("\"{}\"", stringify!(#variants)) ),*
                         }
