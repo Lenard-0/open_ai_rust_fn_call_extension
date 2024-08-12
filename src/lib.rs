@@ -14,14 +14,20 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
             let fields = s.fields.into_iter().map(|field| field.ident.unwrap());
             quote! {
                 impl open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable for #name {
-                    fn to_fn_call(&self) -> String {
-                        let mut json = "{ ".to_string();
-                        #(
-                            json.push_str(&format!("\"{}\": {}, ", stringify!(#fields), open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_call(&self.#fields)));
-                        )*
-                        json.remove(json.len() - 2); // remove trailling comma
-                        json.push('}');
-                        json
+                    fn to_fn_call(&self) -> FunctionCall {
+                        FunctionCall {
+                            name: ident.to_string(),
+                            description: None,
+                            parameters: vec![
+                                #(
+                                    FunctionParameter {
+                                        name: stringify!(#fields),
+                                        _type: open_ai_rust::logoi::input::tool::raw_macro::FunctionCallable::to_fn_type(&self.#fields),
+                                        description: None
+                                    },
+                                )*
+                            ]
+                        }
                     }
                 }
             }
@@ -44,41 +50,9 @@ pub fn turn_type_to_function_call(input: TokenStream) -> TokenStream {
     out.into()
 }
 
-// fn generate_struct_representation(ast: &DeriveInput) -> TokenStream2 {
-//     let name = &ast.ident;
-//     let fields = match &ast.data {
-//         Data::Struct(DataStruct { fields: Fields::Named(FieldsNamed { named, .. }), .. }) => named,
-//         _ => panic!("Only works for structs"),
-//     };
 
-//     let expanded_fields = fields.iter().map(|f| {
-//         let field_name = &f.ident;
-//         let ty = &f.ty;
-//         let field_repr = match ty {
-//             Type::Path(path) => {
-//                 if let Some(ident) = path.path.get_ident() {
-//                     // Recursively process nested structs
-//                     let nested_name = format_ident(&ident.to_string().to_uppercase());
-//                     quote! { #field_name: { #nested_name } }
-//                 } else {
-//                     quote! { #field_name: #ty }
-//                 }
-//             },
-//             _ => quote! { #field_name: #ty },
-//         };
-//         field_repr
-//     });
 
-//     let uppercased_name = syn::Ident::new(&name.to_string().to_uppercase(), name.span());
-
-//     quote! {
-//         pub const #uppercased_name: &'static str = concat!(stringify!(#name { #(#expanded_fields),* }));
-//     }
-// }
-
-fn format_ident(s: &str) -> syn::Ident {
-    syn::Ident::new(s, proc_macro2::Span::call_site())
-}
+// FUNCTION ATTR BELOW
 
 #[proc_macro_attribute]
 pub fn function_call(attr: TokenStream, item: TokenStream) -> TokenStream {
