@@ -1,0 +1,5 @@
+error: unknown function_call container attribute (expected: crate)
+ --> tests/ui/derive_unknown_container_attr.rs:6:17
+  |
+6 | #[function_call(bogus_container_attr)]
+  |                 ^^^^^^^^^^^^^^^^^^^^

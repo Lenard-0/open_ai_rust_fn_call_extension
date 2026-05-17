@@ -1,0 +1,5 @@
+error: FunctionCall derive currently only supports unit enum variants; data-variant enums (oneOf) are planned for a future release
+ --> tests/ui/derive_enum_with_data.rs:6:5
+  |
+6 |     B(u32),
+  |     ^^^^^^

@@ -1,0 +1,5 @@
+error: expected an expression
+ --> tests/ui/function_call_on_non_fn.rs:6:17
+  |
+6 | #[function_call(;)]
+  |                 ^

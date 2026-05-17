@@ -1,17 +1,51 @@
 [package]
-name = "open_ai_rust_fn_call_extension"
-version = "0.2.18"
-edition = "2021"
-description = "Macros for Open AI function calling to be used with the open_ai_rust crate for syntactic sugar."
-license = "MIT"
+name            = "open_ai_rust_fn_call_extension"
+version         = "0.3.0"
+edition         = "2021"
+rust-version    = "1.65"
+authors         = ["Lachy Hislop <lachie.hislop@gmail.com>"]
+description     = "Proc-macro toolkit for OpenAI function-calling: derive JSON-schema from Rust types, annotate functions with tool schemas, and auto-register async dispatch handlers."
+license         = "MIT"
+repository      = "https://github.com/Lenard-0/open_ai_rust_fn_call_extension"
+homepage        = "https://github.com/Lenard-0/open_ai_rust_fn_call_extension"
+documentation   = "https://docs.rs/open_ai_rust_fn_call_extension"
+readme          = "README.md"
+keywords        = ["openai", "function-calling", "macros", "tool", "proc-macro"]
+categories      = ["development-tools::procedural-macro-attributes", "api-bindings"]
+exclude         = ["tests/ui/wip", ".github"]
 
 [lib]
 proc-macro = true
 
+# ── docs.rs ──────────────────────────────────────────────────────────────────
+# Render all features on docs.rs so the `tool_registry` paths are documented.
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+# ── features ─────────────────────────────────────────────────────────────────
+
+[features]
+default = []
+
+# Register `#[tool]`-annotated functions into the global `TOOLS` slice via
+# `linkme`, enabling zero-setup runtime dispatch through
+# `open_ai_rust::tool_registry`.
+#
+# Requires the consumer crate to also enable `open_ai_rust/tool_registry`.
+tool_registry = []
+
+# ── proc-macro dependencies ───────────────────────────────────────────────────
+
 [dependencies]
 proc-macro2 = "1.0"
-quote = "1.0.36"
-syn = { version = "1.0", features = ["full"] }
-serde = { version = "1.0.204", features = ["derive"] }
-serde_json = "1.0.121"
-lazy_static = "1.4"
+quote       = "1.0"
+syn         = { version = "2.0", features = ["full"] }
+
+# ── dev dependencies (tests only) ────────────────────────────────────────────
+
+[dev-dependencies]
+trybuild   = "1.0"
+serde_json = "1"
+# Used only by the tool_registry integration test to exercise the linkme path.
+linkme     = "0.3"
