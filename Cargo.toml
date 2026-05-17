@@ -11,7 +11,7 @@ homepage        = "https://github.com/Lenard-0/open_ai_rust_fn_call_extension"
 documentation   = "https://docs.rs/open_ai_rust_fn_call_extension"
 readme          = "README.md"
 keywords        = ["openai", "function-calling", "macros", "tool", "proc-macro"]
-categories      = ["development-tools::procedural-macro-attributes", "api-bindings"]
+categories      = ["development-tools::procedural-macro-helpers", "api-bindings"]
 exclude         = ["tests/ui/wip", ".github"]
 
 [lib]
