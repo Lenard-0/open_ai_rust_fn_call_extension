@@ -3,6 +3,36 @@
 All notable changes to `open_ai_rust_fn_call_extension`. Format loosely
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.3.1 — 2026-11-19
+
+Non-breaking fix release.
+
+### Fixed
+
+- `#[derive(FunctionCall)]` now names `FunctionCall`, `FunctionParameter`,
+  `FunctionType` and `EnumValues` (plus `String`, `Option`, `vec!`) by full
+  path in its expansion. Previously they were emitted unqualified, so callers
+  had to `use open_ai_rust::{FunctionCall, FunctionParameter, FunctionType}`
+  (and `EnumValues` for enums) next to the derive or the build failed with
+  E0412/E0422/E0425. Only the derive macro needs importing now, which makes
+  derived types usable with `ResponseFormat::for_type::<T>()` (open_ai_rust
+  ≥ 1.2) without extra imports. Existing imports of those names keep
+  compiling (they may now be reported as unused).
+- Corrected the `required` documentation: the derive emits the ordinary
+  (non-strict) tool convention, where `Option<T>` fields are left out of
+  `required`. It does not follow OpenAI's strict-schema convention; with
+  open_ai_rust ≥ 1.2 use `FunctionCall::to_strict_json_schema()` or
+  `ResponseFormat::for_type::<T>()` to get a strict schema.
+
+### Added
+
+- `#[function_call(types = "...")]` container option to set the module of the
+  schema types independently of the `FunctionCallable` trait. Without it the
+  types path is derived from `crate = "..."`: a path ending in `raw_macro`
+  resolves types from its parent module (the default resolves them from
+  `::open_ai_rust::logoi::input::tool`), and any other path is expected to
+  hold the types itself, as the `crate` option has documented since 0.3.0.
+
 ## 0.3.0 — 2026-05-17
 
 Major release aligned with [`open_ai_rust`](https://docs.rs/open_ai_rust)

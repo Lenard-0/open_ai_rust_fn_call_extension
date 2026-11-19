@@ -75,7 +75,7 @@ mod mock {
     }
 }
 
-use mock::{FunctionCall, FunctionCallable, FunctionParameter, FunctionType};
+use mock::{FunctionCallable, FunctionType};
 use open_ai_rust_fn_call_extension::FunctionCall as Derive;
 
 // ── description = "..." field attribute (priority over doc-comment) ──────────

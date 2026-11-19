@@ -251,8 +251,17 @@ carries a `required: bool` flag:
 - `field: T` → `required: true`
 - `field: Option<T>` → `required: false`
 
-This matches OpenAI's strict-schema convention: optionality lives in the
-top-level `required` array, not in the parameter's type.
+This is the ordinary (non-strict) tool convention: an optional field is left
+out of the schema's `required` array and keeps a non-nullable type. It is
+**not** OpenAI's strict-schema convention, which lists every property in
+`required` and expresses optionality with a nullable type. With
+`open_ai_rust` ≥ 1.2, convert a derived schema with
+`FunctionCall::to_strict_json_schema()`, or build a structured-output format
+directly with `ResponseFormat::for_type::<T>()`.
+
+The generated code names `FunctionCall`, `FunctionParameter`, `FunctionType`
+and `EnumValues` by full path, so only the derive macro needs importing
+(plus `FunctionCallable` if you call `T::fn_schema()` / `T::schema_type()`).
 
 ---
 
