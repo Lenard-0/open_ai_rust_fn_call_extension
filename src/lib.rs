@@ -36,7 +36,7 @@
 //! Describe a tool function and a tool argument struct:
 //!
 //! ```ignore
-//! use open_ai_rust::{FunctionCallable, FunctionType};
+//! use open_ai_rust::FunctionCallable; // only needed to call `Point::fn_schema()`
 //! use open_ai_rust_fn_call_extension::{tool, FunctionCall};
 //!
 //! /// A point in 2D space.
@@ -125,9 +125,9 @@ use syn::{
 /// empty string → `None`, otherwise `Some(String::from("..."))`.
 fn optional_string(s: &str) -> TokenStream2 {
     if s.is_empty() {
-        quote! { None }
+        quote! { ::std::option::Option::None }
     } else {
-        quote! { Some(String::from(#s)) }
+        quote! { ::std::option::Option::Some(::std::string::String::from(#s)) }
     }
 }
 
@@ -258,16 +258,49 @@ struct FieldOpts {
 /// Container-level `#[function_call(...)]` options on a derive target.
 struct ContainerOpts {
     /// `#[function_call(crate = "...")]` — module path that owns the
-    /// `FunctionCallable` trait and the supporting schema types
-    /// (`FunctionCall`, `FunctionParameter`, `FunctionType`, `EnumValues`).
-    /// Defaults to the canonical path inside [`open_ai_rust`].
+    /// `FunctionCallable` trait. Defaults to the canonical path inside
+    /// [`open_ai_rust`].
     crate_path: String,
+    /// `#[function_call(types = "...")]` — module path that owns the
+    /// supporting schema types (`FunctionCall`, `FunctionParameter`,
+    /// `FunctionType`, `EnumValues`). When omitted it is derived from
+    /// `crate_path`; see [`ContainerOpts::types_path`].
+    types_path: Option<String>,
 }
+
+/// Canonical module of the `FunctionCallable` trait in `open_ai_rust` 1.x.
+const DEFAULT_TRAIT_MODULE: &str = "::open_ai_rust::logoi::input::tool::raw_macro";
 
 impl Default for ContainerOpts {
     fn default() -> Self {
         Self {
-            crate_path: "::open_ai_rust::logoi::input::tool::raw_macro".to_string(),
+            crate_path: DEFAULT_TRAIT_MODULE.to_string(),
+            types_path: None,
+        }
+    }
+}
+
+impl ContainerOpts {
+    /// Module path the generated code uses for `FunctionCall`,
+    /// `FunctionParameter`, `FunctionType` and `EnumValues`.
+    ///
+    /// Explicit `types = "..."` wins. Otherwise: if `crate_path` ends in a
+    /// `raw_macro` segment (the trait's home in `open_ai_rust`, whose parent
+    /// `tool` module holds the types) that segment is dropped; any other
+    /// `crate_path` is assumed to hold the types itself, as documented for
+    /// the `crate` override since 0.3.0.
+    fn types_path(&self) -> String {
+        if let Some(t) = &self.types_path {
+            return t.clone();
+        }
+        let trimmed = self.crate_path.trim();
+        match trimmed.strip_suffix("raw_macro") {
+            Some(parent) if parent.trim_end().ends_with("::") => parent
+                .trim_end()
+                .trim_end_matches("::")
+                .trim_end()
+                .to_string(),
+            _ => trimmed.to_string(),
         }
     }
 }
@@ -284,7 +317,11 @@ fn parse_container_opts(attrs: &[Attribute]) -> syn::Result<ContainerOpts> {
                 opts.crate_path = meta.value()?.parse::<syn::LitStr>()?.value();
                 return Ok(());
             }
-            Err(meta.error("unknown function_call container attribute (expected: crate)"))
+            if meta.path.is_ident("types") {
+                opts.types_path = Some(meta.value()?.parse::<syn::LitStr>()?.value());
+                return Ok(());
+            }
+            Err(meta.error("unknown function_call container attribute (expected: crate, types)"))
         })?;
     }
     Ok(opts)
@@ -344,6 +381,19 @@ fn parse_field_opts(attrs: &[Attribute]) -> syn::Result<FieldOpts> {
 ///
 /// The default path is `::open_ai_rust::logoi::input::tool::raw_macro`.
 ///
+/// The generated code names every schema type by full path, so nothing but
+/// the derive macro itself needs to be imported. The types (`FunctionCall`,
+/// `FunctionParameter`, `FunctionType`, `EnumValues`) are resolved from the
+/// `crate` path's parent when it ends in `raw_macro` (the default resolves
+/// them from `::open_ai_rust::logoi::input::tool`), and from the `crate`
+/// path itself otherwise. `#[function_call(crate = "::open_ai_rust")]` works
+/// too, since `open_ai_rust` re-exports the trait and the types at its root.
+///
+/// `#[function_call(types = "::path::to::types_module")]`
+///
+/// Override the module path of the supporting schema types independently of
+/// the trait path.
+///
 /// # Field attributes
 ///
 /// | Attribute | Effect |
@@ -357,9 +407,15 @@ fn parse_field_opts(attrs: &[Attribute]) -> syn::Result<FieldOpts> {
 ///
 /// Every emitted `FunctionParameter` carries a `required: bool` flag. The
 /// derive sets it to `false` automatically when the field's outermost type is
-/// `Option<T>`, and `true` otherwise. This mirrors OpenAI's strict-schema
-/// convention: optionality lives in the top-level `required` array, not in
-/// the parameter's type.
+/// `Option<T>`, and `true` otherwise. This is the ordinary (non-strict) tool
+/// convention: an optional field is simply left out of the schema's
+/// `required` array, and its type stays non-nullable.
+///
+/// It is **not** OpenAI's strict-schema convention, which requires every
+/// property to be listed in `required` and expresses optionality with a
+/// nullable type instead. With `open_ai_rust` ≥ 1.2, convert the derived
+/// schema with `FunctionCall::to_strict_json_schema()`, or build a
+/// structured-output format directly with `ResponseFormat::for_type::<T>()`.
 ///
 /// # Supported shapes
 ///
@@ -459,16 +515,18 @@ fn collect_fields(s: &syn::DataStruct) -> syn::Result<Vec<FieldInfo>> {
 fn emit_param_vec<'a>(
     fields: &'a [FieldInfo],
     trait_path: &syn::Path,
+    types_path: &syn::Path,
 ) -> impl Iterator<Item = TokenStream2> + 'a {
     let tp = trait_path.clone();
+    let ty_p = types_path.clone();
     fields.iter().map(move |f| {
         let name = &f.name_out;
         let desc = optional_string(&f.description);
         let req = f.required;
         let ty = &f.ty;
         quote! {
-            FunctionParameter {
-                name: String::from(#name),
+            #ty_p ::FunctionParameter {
+                name: ::std::string::String::from(#name),
                 _type: <#ty as #tp ::FunctionCallable>::schema_type(),
                 description: #desc,
                 required: #req,
@@ -483,25 +541,26 @@ fn derive_impl(input: DeriveInput) -> syn::Result<TokenStream2> {
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
     let container = parse_container_opts(&input.attrs)?;
     let trait_path: syn::Path = syn::parse_str(&container.crate_path)?;
+    let tys: syn::Path = syn::parse_str(&container.types_path())?;
     let struct_desc_tokens = optional_string(&struct_description);
 
     match &input.data {
         Data::Struct(s) => {
             let fields = collect_fields(s)?;
-            let params: Vec<_> = emit_param_vec(&fields, &trait_path).collect();
+            let params: Vec<_> = emit_param_vec(&fields, &trait_path, &tys).collect();
             let params2 = params.clone();
 
             Ok(quote! {
                 impl #impl_generics #trait_path ::FunctionCallable for #name #ty_generics #where_clause {
-                    fn schema_type() -> FunctionType where Self: ::std::marker::Sized {
-                        FunctionType::Object(vec![ #( #params, )* ])
+                    fn schema_type() -> #tys ::FunctionType where Self: ::std::marker::Sized {
+                        #tys ::FunctionType::Object(::std::vec![ #( #params, )* ])
                     }
 
-                    fn fn_schema() -> FunctionCall where Self: ::std::marker::Sized {
-                        FunctionCall {
-                            name: String::from(stringify!(#name)),
+                    fn fn_schema() -> #tys ::FunctionCall where Self: ::std::marker::Sized {
+                        #tys ::FunctionCall {
+                            name: ::std::string::String::from(::std::stringify!(#name)),
                             description: #struct_desc_tokens,
-                            parameters: vec![ #( #params2, )* ],
+                            parameters: ::std::vec![ #( #params2, )* ],
                         }
                     }
                 }
@@ -528,17 +587,17 @@ fn derive_impl(input: DeriveInput) -> syn::Result<TokenStream2> {
 
             Ok(quote! {
                 impl #impl_generics #trait_path ::FunctionCallable for #name #ty_generics #where_clause {
-                    fn schema_type() -> FunctionType where Self: ::std::marker::Sized {
-                        FunctionType::Enum(EnumValues::String(vec![
-                            #( String::from(#variant_strings) ),*
+                    fn schema_type() -> #tys ::FunctionType where Self: ::std::marker::Sized {
+                        #tys ::FunctionType::Enum(#tys ::EnumValues::String(::std::vec![
+                            #( ::std::string::String::from(#variant_strings) ),*
                         ]))
                     }
 
-                    fn fn_schema() -> FunctionCall where Self: ::std::marker::Sized {
-                        FunctionCall {
-                            name: String::from(stringify!(#name)),
+                    fn fn_schema() -> #tys ::FunctionCall where Self: ::std::marker::Sized {
+                        #tys ::FunctionCall {
+                            name: ::std::string::String::from(::std::stringify!(#name)),
                             description: #struct_desc_tokens,
-                            parameters: vec![],
+                            parameters: ::std::vec![],
                         }
                     }
                 }

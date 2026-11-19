@@ -84,7 +84,7 @@ mod mock {
     }
 }
 
-use mock::{EnumValues, FunctionCall, FunctionCallable, FunctionParameter, FunctionType};
+use mock::{EnumValues, FunctionCallable, FunctionType};
 use open_ai_rust_fn_call_extension::FunctionCall as FunctionCallDerive;
 
 // ── Widget struct ─────────────────────────────────────────────────────────────

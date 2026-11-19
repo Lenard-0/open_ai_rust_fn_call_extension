@@ -1,3 +1,4 @@
 /target
 Cargo.lock
 /wip
+.DS_Store
